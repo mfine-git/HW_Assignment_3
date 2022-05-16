@@ -70,7 +70,8 @@ In this scenario you may choose to create a Lambda function that creates a thumb
 3) <ins>S3 (Simple Storage Service)</ins> 
    - S3 > Block Public Access settings for this account > Unblock all public access (to allow Static website hosting).
    - A) S3 > Buckets > Create bucket name: intuit-image-bucket-input (not public) - for uploaded files.
-   - B) S3 > Buckets > Create bucket name: intuit-image-bucket-output (Static website hosting, Publicly accessible, has Bucket website endpoint) - for thumbnailed images and static web hosting.
+   - B) S3 > Buckets > Create bucket name: intuit-log-bucket (not public) - for non-image file's failure logs 
+   - C) S3 > Buckets > Create bucket name: intuit-image-bucket-output (Static website hosting, Publicly accessible, has Bucket website endpoint) - for thumbnailed images and static web hosting.
      - (Index document: index.html > Error document: error.html)
     ```
     Bucket policy:
@@ -86,7 +87,7 @@ In this scenario you may choose to create a Lambda function that creates a thumb
         ]
     }
     ```
-   
+  
 4) <ins>DS (Relational Database Service)</ins> 
    - RDS > Create database > Standard create > MySQL > DB instance identifier: intuit-db-identifier > Initial database name: intuit_database  > Master username: XXXX > Master password: XXXX > Database port: 3306 > Default VPC > All related subnet groups > Default security group
 
@@ -99,7 +100,7 @@ In this scenario you may choose to create a Lambda function that creates a thumb
   1. From Project GitHub repo > Upload all content in "/static_web_server/" into root of S3 "intuit-image-bucket-output"
   2. Access Web Server Endpoint from global browser via:
      - [Main page](http://intuit-image-bucket-output.s3-website-us-east-1.amazonaws.com/)
-     - [Download single image](http://intuit-image-bucket-output.s3-website-us-east-1.amazonaws.com/<image_name>)
+     - Download single image using following pattern: http://intuit-image-bucket-output.s3-website-us-east-1.amazonaws.com/<image_name>
      - [Error page](http://intuit-image-bucket-output.s3-website-us-east-1.amazonaws.com/<non_existent_image)
 #### *Related links:* 
  - [https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteAccessPermissionsReqd.html](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteAccessPermissionsReqd.html)
@@ -107,7 +108,8 @@ In this scenario you may choose to create a Lambda function that creates a thumb
  - [https://docs.aws.amazon.com/AmazonS3/latest/userguide/HostingWebsiteOnS3Setup.html](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HostingWebsiteOnS3Setup.html)
 
 ### <ins>Lambda function:</ins>  
- - In this project, we create AWS Lambda function that triggered upon receiving the file in the S3 source bucket. Lambda will resize and upload image-format files to another S3 bucket. In case the uploaded file is not image, related failure-log will be created in third bucket.  
+ - In this project, we create AWS Lambda function that triggered upon receiving the file in the S3 source bucket. Lambda will resize and upload image-format files to another S3 bucket. In case the uploaded file is not image, related failure-log will be created in third bucket.  
+ - Lambda will update RDS table with required image parameters.
  - Lambda function (Runtime: Python3.8) will be deployed using Jenkins. Process logs are stored and can be monitored in CloudWatch.
 #### *Related links:* 
  - [https://towardsdatascience.com/how-to-create-an-object-detection-solution-with-aws-and-python-8b20690686c5](https://towardsdatascience.com/how-to-create-an-object-detection-solution-with-aws-and-python-8b20690686c5)
@@ -155,7 +157,7 @@ In this scenario you may choose to create a Lambda function that creates a thumb
    - MySQL Workbench 8.0 CE > Database > Manage connection > New > Connection name: intuit-db-identifier > Host name: XXXXX.XXXXX..us-east-1.rds.amazonaws.com > Port: 3306 > Username: XXXX > Password: XXXX > Close.
    - Query database and get results that include all details mentioned in task C.
      - (Database > Connect to database > OK > intuit_database > Tables > File_Upload_Catalog > Right click: Select Rows - Limit 1000)
-   - Query database and get result of 5 smallest thumbnails. This should include all details mentioned in task C)
+   - Query database and get result of 5 smallest thumbnails. This should include all details mentioned in task C.
      - Execute: `SELECT * FROM intuit_database.File_Upload_Catalog order by Thumbnail_size DESC LIMIT 5;`
        - (Known gap: current query showing recognized Thumbnail size value as a text (can be solved by correting data type from varchar(255) to int in Lambda function)
    - Note: Drop "File_Upload_Catalog" table to clean up upload history in RDS
