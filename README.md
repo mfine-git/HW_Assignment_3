@@ -88,11 +88,11 @@ In this scenario you may choose to create a Lambda function that creates a thumb
     }
     ```
   
-4) <ins>DS (Relational Database Service)</ins> 
+4) <ins>RDS (Relational Database Service)</ins> 
    - RDS > Create database > Standard create > MySQL > DB instance identifier: intuit-db-identifier > Initial database name: intuit_database  > Master username: XXXX > Master password: XXXX > Database port: 3306 > Default VPC > All related subnet groups > Default security group
 
 5) <ins>Secret Manager</ins> 
-   - Secret Mansger > Store new secret > Credentials for Amazon RDS database > Encryption key: aws/secretsmanager > Secret name: RDSsecret
+   - Secret Manager > Store new secret > Credentials for Amazon RDS database > Encryption key: aws/secretsmanager > Secret name: RDSsecret
 
 ## ***IMPLEMENTATION:***
 
@@ -122,7 +122,7 @@ In this scenario you may choose to create a Lambda function that creates a thumb
   - Global credentials "jenkins-integration" in "username, password" format.
 - Open Jenkins in browser: http://localhost:8080/
 - Create new item > name: intuit_pipeline > Freestyle project > OK > 
-- Source Code Management > Git: V > Repository URL: https://github.com/mfine-git/HW_Assignment_3.git > Credentials: XXXX > Branch Specifier: */main 
+- Source Code Management > Git: V > Repository URL: https://github.com/mfine-git/Photo_Processing_App > Credentials: XXXX > Branch Specifier: */main 
 - Build > Add build step > AWS Lambda deployment > AWS Access Key Id: XXXX > AWS Secret Key: XXXX > AWS Region: us-east-1 > Function Name: intuit-lambda-jenkins > Description: Managed by Jenkins > Role: arn:aws:iam::XXXX:role/intuit-s3tos3 > Artifact Location: lambda_function.zip > Handler Name: lambda_function.lambda_handler > Memory Size: 128 > Timeout: 5 > Runtime: python3.8 > Update Mode: Code and Configuration > Publish new version: V > Subnets: all 6 (subnet-XXXX,...) > Security Groups: sg-XXXX > Save
 - Build Now > Build #X > Console Ouptut
 #### *Related links:* 
@@ -132,7 +132,7 @@ In this scenario you may choose to create a Lambda function that creates a thumb
 ### <ins>Lambda post-deployment:</ins>
  - After lamda deployed, following configurations need to be added manualy (Known gap. May be covered via using AWS SAM framework. See AWS_SAM_file.yaml in project folder)
    1. S3 bucket  trigger
-      - Lambda > Functions > intuit-lambda-function-jenkins > Add trigger > S3 > Bucket: intuit-image-bucket-input > Event type: All objects create events > Recursive invocation: V > Add
+      - Lambda > Functions > intuit-lambda-jenkins > Add trigger > S3 > Bucket: intuit-image-bucket-input > Event type: All objects create events > Recursive invocation: V > Add
    2. Layers (ZIP archive that contains libraries). PyMysql and Pillow in current setup.
       - Lambda > Layers > Add a layer > Specify an ARN: arn:aws:lambda:us-east-1:770693421928:layer:Klayers-python38-Pillow:15 > Add
       - Lambda > Layers > Add a layer > Specify an ARN: arn:aws:lambda:us-east-1:770693421928:layer:Klayers-python38-PyMySQL:4 > Add
@@ -142,11 +142,11 @@ In this scenario you may choose to create a Lambda function that creates a thumb
  - [https://github.com/keithrozario/Klayers/blob/master/deployments/python3.8/arns/us-east-1.csv](https://github.com/keithrozario/Klayers/blob/master/deployments/python3.8/arns/us-east-1.csv)
 
 ### <ins>Configure e-mail notificaions (alarm):</ins>
- - CloudWatch > Log groups > /aws/lambda/intuit-lambda-function-jenkins: V > Actions > edit retention settings > 1 week (example) > Save.
- - CloudWatch > Log groups > /aws/lambda/intuit-lambda-function-jenkins > Metric filetrs > Create metric filter > Filter pattern: "Unprocessable Entity: input object must be a jpg or png." > Next > Filter name: intuit_unprocessable_entity > Metric namespace: intuit_namespace > Metric name: intuit_metric > Metric value: 1 > Default value: 0 > Next > Create metric filter.
+ - CloudWatch > Log groups > /aws/lambda/intuit-lambda-jenkins: V > Actions > edit retention settings > 1 week (example) > Save.
+ - CloudWatch > Log groups > /aws/lambda/intuit-lambda-jenkins > Metric filetrs > Create metric filter > Filter pattern: "Unprocessable Entity: input object must be a jpg or png." > Next > Filter name: intuit_unprocessable_entity > Metric namespace: intuit_namespace > Metric name: intuit_metric > Metric value: 1 > Default value: 0 > Next > Create metric filter.
  - Upload "not image" file to S3 "intuit-image-bucket-input" in order to create Event in Log stream.
  - CloudWatch > All alarms > Create alarm > Select metric > intuit_namespace > Metrics with no dimensions > intuit_metric: V > Select metric > Statistics: Maximum, Period: 1 min > Static > Greater > than: 0 > Missing data treatment: Treat missing data as good > Next > Alarm state trigger: In alarm > Select an SNS topic: Create new topic: intuit_sns_topic > emal: abc@def.com > Create topic > Next > Alarm name: intuit_alarm > Alarm description: Unprocessable Entity > Next > Create alarm.
- - Confirm Subscription to "intuit_sns_topic_jenkins" SNS topic via email.
+ - Confirm Subscription to "intuit_sns_topic" SNS topic via email.
  - Upload "not image" file to S3 "intuit-image-bucket-input".
 
 ### <ins>Success criteria:</ins>
